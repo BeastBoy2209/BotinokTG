@@ -12,6 +12,7 @@ import (
 	"BotinokTG/internal/users"
 	"BotinokTG/internal/members"
 	"BotinokTG/internal/expenses"
+	"BotinokTG/internal/video"
 
 	"github.com/go-telegram/bot"
 )
@@ -34,11 +35,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	opts := []bot.Option{
-		bot.WithDefaultHandler(handlers.DefaultHandler),
-	}
-
-	b, err := bot.New(cfg.BotToken, opts...)
+	b, err := bot.New(cfg.BotToken)
 	if err != nil {
 		slog.Error("smth went wrong with bot", slog.Any("error", err))
 		os.Exit(1)
@@ -52,8 +49,13 @@ func main() {
 
 	expenseService := expenses.NewService(expenseRepo, memberRepo, userRepo, chatRepo)
 	startService := users.NewRegistrationService(dbpool)
-	
-	handlers.RegisterAll(b, startService, expenseService)
+
+	ytDlp := video.NewYTDLPDownloader(cfg.YtDlpPath)
+	tkDlp := video.NewTikTokDownloader()
+	videoService := video.NewService(ytDlp, tkDlp, cfg.VideoMaxSize)
+
+	handlers.RegisterAll(b, startService, expenseService, videoService)
+
 
 	b.Start(ctx)
 }

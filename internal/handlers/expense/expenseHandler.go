@@ -25,7 +25,7 @@ func (h *Handler) AddExpenseHandler(ctx context.Context, b *bot.Bot, update *mod
 	text := update.Message.Text
 	parts := strings.SplitN(text, " ", 3)
 	if parts[0] != "/expense" {
-		return // Игнорируем, если это была другая команда (например /expenses)
+		return 
 	}
 	if len(parts) < 2 {
 		b.SendMessage(ctx, &bot.SendMessageParams{

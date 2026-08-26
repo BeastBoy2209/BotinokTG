@@ -25,15 +25,13 @@ func (h *Handler) Start(ctx context.Context, b *bot.Bot, update *models.Update) 
 		return
 	}
 
-	// Определяем название чата
 	var chatTitle string
 	if update.Message.Chat.Type == "private" {
-		chatTitle = update.Message.Chat.FirstName // Для личек используем имя
+		chatTitle = update.Message.Chat.FirstName
 	} else {
-		chatTitle = update.Message.Chat.Title // Для групп используем название
+		chatTitle = update.Message.Chat.Title
 	}
 
-	// Выполняем транзакцию через сервис
 	err := h.service.RegisterUserInChat(
 		ctx,
 		update.Message.From.ID,
@@ -44,7 +42,6 @@ func (h *Handler) Start(ctx context.Context, b *bot.Bot, update *models.Update) 
 	)
 	if err != nil {
 		slog.Error("failed to register user in chat", slog.Any("error", err))
-		// Можно отправить пользователю сообщение об ошибке
 	} else {
 		slog.Info("user successfully registered in chat")
 	}
