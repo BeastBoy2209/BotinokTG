@@ -1,18 +1,20 @@
 package main
 
 import (
+	"BotinokTG/internal/chats"
+	"BotinokTG/internal/config"
+	"BotinokTG/internal/expenses"
+	"BotinokTG/internal/handlers"
+	"BotinokTG/internal/members"
+	"BotinokTG/internal/storage"
+	"BotinokTG/internal/users"
+	"BotinokTG/internal/video"
+	"BotinokTG/internal/who"
 	"context"
 	"log/slog"
 	"os"
-	
-	"BotinokTG/internal/chats"
-	"BotinokTG/internal/config"
-	"BotinokTG/internal/handlers"
-	"BotinokTG/internal/storage"
-	"BotinokTG/internal/users"
-	"BotinokTG/internal/members"
-	"BotinokTG/internal/expenses"
-	"BotinokTG/internal/video"
+	"os/signal"
+	"syscall"
 
 	"github.com/go-telegram/bot"
 )
@@ -32,15 +34,20 @@ func main() {
 	}
 	defer dbpool.Close()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	// SIGTERM
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
-	b, err := bot.New(cfg.BotToken)
+	startService := users.NewRegistrationService(dbpool)
+
+	b, err := bot.New(
+		cfg.BotToken,
+		bot.WithMiddlewares(handlers.RegistrationMiddleware(startService)),
+	)
 	if err != nil {
 		slog.Error("smth went wrong with bot", slog.Any("error", err))
 		os.Exit(1)
 	}
-	slog.Info("bot started... \n")
 
 	userRepo := users.NewRepository(dbpool)
 	chatRepo := chats.NewRepository(dbpool)
@@ -48,14 +55,17 @@ func main() {
 	expenseRepo := expenses.NewRepository(dbpool)
 
 	expenseService := expenses.NewService(expenseRepo, memberRepo, userRepo, chatRepo)
-	startService := users.NewRegistrationService(dbpool)
 
 	ytDlp := video.NewYTDLPDownloader(cfg.YtDlpPath)
 	tkDlp := video.NewTikTokDownloader()
 	videoService := video.NewService(ytDlp, tkDlp, cfg.VideoMaxSize)
 
-	handlers.RegisterAll(b, startService, expenseService, videoService)
+	whoService := who.NewRandomizerService(memberRepo)
 
+	handlers.RegisterAll(b, startService, expenseService, videoService, whoService, memberRepo)
+
+	slog.Info("bot started... \n")
 
 	b.Start(ctx)
+	slog.Info("graceful shutdown: ok")
 }

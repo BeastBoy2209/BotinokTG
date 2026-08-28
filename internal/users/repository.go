@@ -1,9 +1,8 @@
 package users
 
 import (
-	"context"
-
 	"BotinokTG/internal/storage"
+	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -18,7 +17,11 @@ func NewRepository(db storage.DBTX) *UserRepository {
 	}
 }
 
-func (r *UserRepository) UpsertUser(ctx context.Context, telegram_id int64, username string, firstname string) (*User, error) {
+func (r *UserRepository) UpsertUser(
+	ctx context.Context,
+	telegram_id int64,
+	username, firstname string,
+) (*User, error) {
 	var user User
 
 	var pgUsername pgtype.Text
@@ -52,7 +55,9 @@ func (r *UserRepository) UpsertUser(ctx context.Context, telegram_id int64, user
 func (r *UserRepository) GetByTelegramID(ctx context.Context, telegramID int64) (*User, error) {
 	var user User
 	query := `
-	SELECT * FROM users WHERE telegram_id = $1
+		SELECT id, telegram_id, username, first_name, created_at
+		FROM users 
+		WHERE telegram_id = $1
 	`
 
 	err := r.db.QueryRow(ctx, query, telegramID).Scan(

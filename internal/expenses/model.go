@@ -6,19 +6,33 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type Expense struct {
+type Event struct {
+	ID        int64
+	ChatID    int64
+	Title     string
+	Status    string // 'open', 'closed'
+	CreatedAt time.Time
+}
+
+type EventExpense struct {
 	ID          int64
-	ChatID      int64
-	UserID      int64
+	EventID     int64
+	PayerID     int64
 	Amount      int64
 	Description pgtype.Text
 	CreatedAt   time.Time
 }
 
-type ChatExpenseInfo struct {
-	Amount      int64
-	Description pgtype.Text
-	CreatedAt   time.Time
-	Username    pgtype.Text
-	FirstName   pgtype.Text
+type Debt struct {
+	DebtorID     int64
+	CreditorID   int64
+	DebtorName   string
+	CreditorName string
+	Amount       int64
+}
+
+type UserBalance struct {
+	UserID    int64
+	FirstName string
+	Balance   int64
 }

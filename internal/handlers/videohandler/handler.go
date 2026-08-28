@@ -1,21 +1,21 @@
 package videohandler
 
-import(
+import (
+	"BotinokTG/internal/video"
 	"context"
 	"log/slog"
 	"os"
 	"time"
 
-	"BotinokTG/internal/video"
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 )
 
-type Handler struct{
+type Handler struct {
 	service *video.VideoService
 }
 
-func NewHandler(service *video.VideoService)*Handler{
+func NewHandler(service *video.VideoService) *Handler {
 	return &Handler{service: service}
 }
 
@@ -34,7 +34,7 @@ func (h *Handler) HandleMessage(ctx context.Context, b *bot.Bot, update *models.
 
 	loadingMsg, err := b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: chatID,
-		Text:   "⏳ Видео скачивается, подождите...",
+		Text:   "Видео скачивается, wait...",
 		ReplyParameters: &models.ReplyParameters{
 			MessageID: update.Message.ID,
 		},
@@ -54,16 +54,16 @@ func (h *Handler) HandleMessage(ctx context.Context, b *bot.Bot, update *models.
 		}()
 
 		downloadedVideo, err := h.service.ProcessMessage(ctx, messageText)
-		
 		if err != nil {
 			slog.Error("download failed", slog.Any("error", err))
 			b.SendMessage(ctx, &bot.SendMessageParams{
 				ChatID: cID,
 				Text:   "Ошибка скачивания видео: " + err.Error(),
 			})
+
 			return
 		}
-		
+
 		if downloadedVideo == nil {
 			return
 		}
@@ -74,32 +74,33 @@ func (h *Handler) HandleMessage(ctx context.Context, b *bot.Bot, update *models.
 				ChatID: cID,
 				Text:   "Ошибка при чтении файла",
 			})
+
 			return
 		}
 		defer file.Close()
 		defer os.Remove(downloadedVideo.FilePath)
 
 		var sendErr error
-		for i := 0; i < 3; i++ {
+		for i := range 3 {
 			_, sendErr = b.SendVideo(ctx, &bot.SendVideoParams{
 				ChatID: cID,
 				Video:  &models.InputFileUpload{Filename: "video.mp4", Data: file},
 			})
-			
+
 			if sendErr == nil {
 				break
 			}
-			
-			slog.Warn("SendVideo failed, retrying...", slog.Int("attempt", i+1), slog.Any("error", sendErr))
+
+			slog.Warn("sendVideo failed, retrying...", slog.Int("attempt", i+1), slog.Any("error", sendErr))
 			time.Sleep(2 * time.Second)
 			file.Seek(0, 0)
 		}
 
 		if sendErr != nil {
-			slog.Error("SendVideo error after retries", slog.Any("error", sendErr))
-			b.SendMessage(ctx, &bot.SendMessageParams{
+			slog.Error("sendVideo error after retries", slog.Any("error", sendErr))
+			_ , _ = b.SendMessage(ctx, &bot.SendMessageParams{
 				ChatID: cID,
-				Text:   "Видео скачалось, но Телеграм отказался его принимать после 3 попыток",
+				Text:   "Видео скачалось, но не удалось отправить в telegram",
 			})
 		}
 	}(text, chatID)

@@ -1,10 +1,9 @@
 package users
 
 import (
-	"context"
-
 	"BotinokTG/internal/chats"
 	"BotinokTG/internal/members"
+	"context"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -19,7 +18,13 @@ func NewRegistrationService(pool *pgxpool.Pool) *RegistrationService {
 	}
 }
 
-func (s *RegistrationService) RegisterUserInChat(ctx context.Context, tgUserID int64, username, firstName string, tgChatID int64, chatTitle string) error {
+func (s *RegistrationService) RegisterUserInChat(
+	ctx context.Context,
+	tgUserID int64,
+	username, firstName string,
+	tgChatID int64,
+	chatTitle string,
+) error {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return err

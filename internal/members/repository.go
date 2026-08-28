@@ -1,9 +1,11 @@
 package members
 
 import (
-	"context"
-
 	"BotinokTG/internal/storage"
+	"context"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type MembershipRepository struct {
@@ -27,7 +29,7 @@ func (r *MembershipRepository) AddMember(ctx context.Context, chatID, userID int
 	return err
 }
 
-func (r *MembershipRepository) IsMember(ctx context.Context, chatID int64, userID int64) (bool, error) {
+func (r *MembershipRepository) IsMember(ctx context.Context, chatID, userID int64) (bool, error) {
 	var isMember bool
 	query := `
 		SELECT EXISTS(
@@ -41,4 +43,48 @@ func (r *MembershipRepository) IsMember(ctx context.Context, chatID int64, userI
 	}
 
 	return isMember, nil
+}
+
+type Member struct {
+	ID         int64
+	TelegramID int64
+	Username   pgtype.Text
+	FirstName  string
+	CreatedAt  time.Time
+}
+
+func (r *MembershipRepository) GetMembersByChat(
+	ctx context.Context,
+	chatID int64,
+) ([]Member, error) {
+	query := `
+		SELECT u.id, u.telegram_id, u.username, u.first_name, u.created_at
+		FROM users u
+		JOIN chat_members cm ON u.id = cm.user_id
+		JOIN chats c ON c.id = cm.chat_id
+		WHERE c.telegram_id = $1
+	`
+	rows, err := r.db.Query(ctx, query, chatID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var chatMembers []Member
+	for rows.Next() {
+		var user Member
+		err := rows.Scan(
+			&user.ID,
+			&user.TelegramID,
+			&user.Username,
+			&user.FirstName,
+			&user.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		chatMembers = append(chatMembers, user)
+	}
+
+	return chatMembers, rows.Err()
 }

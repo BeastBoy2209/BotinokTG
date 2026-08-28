@@ -1,22 +1,61 @@
 package handlers
 
 import (
-	// "context"
-	// "log/slog"
-
 	"BotinokTG/internal/expenses"
 	"BotinokTG/internal/handlers/expense"
 	"BotinokTG/internal/handlers/mainmenu"
 	"BotinokTG/internal/handlers/start"
-	"BotinokTG/internal/users"
 	"BotinokTG/internal/handlers/videohandler"
+	"BotinokTG/internal/members"
+	"BotinokTG/internal/users"
 	"BotinokTG/internal/video"
+	"BotinokTG/internal/who"
+	"context"
+
+	// "log/slog".
+
+	mentionhandler "BotinokTG/internal/handlers/mention"
+	whohandler "BotinokTG/internal/handlers/who"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 )
 
-func RegisterAll(b *bot.Bot, startService *users.RegistrationService, expenseService *expenses.ExpenseService, videoService *video.VideoService) {
+func RegistrationMiddleware(service *users.RegistrationService) bot.Middleware {
+	return func(next bot.HandlerFunc) bot.HandlerFunc {
+		return func(ctx context.Context, b *bot.Bot, update *models.Update) {
+			if update.Message != nil && update.Message.From != nil {
+				var chatTitle string
+				if update.Message.Chat.Type == "private" {
+					chatTitle = update.Message.Chat.FirstName
+				} else {
+					chatTitle = update.Message.Chat.Title
+				}
+
+				go func() {
+					_ = service.RegisterUserInChat(
+						context.Background(),
+						update.Message.From.ID,
+						update.Message.From.Username,
+						update.Message.From.FirstName,
+						update.Message.Chat.ID,
+						chatTitle,
+					)
+				}()
+			}
+			next(ctx, b, update)
+		}
+	}
+}
+
+func RegisterAll(
+	b *bot.Bot,
+	startService *users.RegistrationService,
+	expenseService *expenses.ExpenseService,
+	videoService *video.VideoService,
+	whoService *who.RandomizerService,
+	memberRepo *members.MembershipRepository,
+) {
 	startHandler := start.NewHandler(startService)
 
 	b.RegisterHandler(
@@ -41,26 +80,32 @@ func RegisterAll(b *bot.Bot, startService *users.RegistrationService, expenseSer
 	)
 
 	expHandler := expense.NewHandler(expenseService)
-	
 	b.RegisterHandler(
 		bot.HandlerTypeMessageText,
-		"/expenses",
-		bot.MatchTypeExact,
-		expHandler.GetExpensesHandler,
+		"/event",
+		bot.MatchTypePrefix,
+		expHandler.HandleEventCommand,
 	)
 
+	whoHand := whohandler.NewHandler(whoService)
 	b.RegisterHandler(
 		bot.HandlerTypeMessageText,
-		"/expense",
+		"/who",
 		bot.MatchTypePrefix,
-		expHandler.AddExpenseHandler,
+		whoHand.HandleWho,
+	)
+
+	mentionHand := mentionhandler.NewHandler(memberRepo)
+	b.RegisterHandlerMatchFunc(
+		bot.MatchFunc(mentionhandler.MatchFunc),
+		mentionHand.Handle,
 	)
 
 	vidHandler := videohandler.NewHandler(videoService)
 	b.RegisterHandlerMatchFunc(
-    bot.MatchFunc(func(update *models.Update) bool { return true }),
-    vidHandler.HandleMessage,
-)
+		bot.MatchFunc(func(update *models.Update) bool { return true }),
+		vidHandler.HandleMessage,
+	)
 }
 
 // func DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {

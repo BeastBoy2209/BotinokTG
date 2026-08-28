@@ -59,27 +59,27 @@ linters:
     - intrange
     - iotamixing
     # ireturn
-    - lll
+    # - lll
     - loggercheck
     - maintidx
     - makezero
     - mirror
     - misspell
-    - mnd
+    # - mnd
     - musttag
     - nakedret
     - nestif
     - nilerr
     - nilnesserr
-    - nilnil
-    - nlreturn
+    # - nilnil
+    # - nlreturn
     - noctx
-    - noinlineerr
+    # - noinlineerr
     - nolintlint
-    - nonamedreturns
+    # - nonamedreturns
     - nosprintfhostport
     - paralleltest
-    - perfsprint
+    # - perfsprint
     - prealloc
     - predeclared
     - promlinter

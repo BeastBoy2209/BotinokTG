@@ -1,0 +1,12 @@
+DROP TABLE IF EXISTS event_expenses;
+DROP TABLE IF EXISTS event_participants;
+DROP TABLE IF EXISTS events;
+
+CREATE TABLE expenses (
+    id SERIAL PRIMARY KEY,
+    chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    amount BIGINT NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);

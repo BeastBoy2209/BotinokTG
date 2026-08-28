@@ -1,17 +1,18 @@
 package video
-import(
+
+import (
 	"context"
-	"os"
 	"errors"
+	"os"
 )
 
-type VideoService struct{
+type VideoService struct {
 	ytDownloader Downloader
 	tkDownloader Downloader
-	maxSize int64
+	maxSize      int64
 }
 
-func NewService(ytDownloader Downloader, tkDownloader Downloader, maxSize int64) *VideoService{
+func NewService(ytDownloader, tkDownloader Downloader, maxSize int64) *VideoService {
 	return &VideoService{
 		ytDownloader: ytDownloader,
 		tkDownloader: tkDownloader,
@@ -19,9 +20,9 @@ func NewService(ytDownloader Downloader, tkDownloader Downloader, maxSize int64)
 	}
 }
 
-func (s *VideoService) ProcessMessage(ctx context.Context, text string) (*DownloadVideo, error){
+func (s *VideoService) ProcessMessage(ctx context.Context, text string) (*DownloadVideo, error) {
 	url, platform, supported := DetectPlatform(text)
-	if !supported{
+	if !supported {
 		return nil, nil
 	}
 
@@ -33,17 +34,17 @@ func (s *VideoService) ProcessMessage(ctx context.Context, text string) (*Downlo
 	}
 
 	video, err := downloader.Download(ctx, url)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
-	
+
 	video.Platform = platform
-	
+
 	if video.Size > s.maxSize {
 		os.Remove(video.FilePath)
+
 		return nil, errors.New("video is too large for Telegram")
 	}
-	
+
 	return video, nil
 }
-

@@ -1,9 +1,8 @@
 package chats
 
 import (
-	"context"
-
 	"BotinokTG/internal/storage"
+	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -18,7 +17,11 @@ func NewRepository(db storage.DBTX) *ChatRepository {
 	}
 }
 
-func (r *ChatRepository) UpsertChat(ctx context.Context, telegramID int64, title string) (*Chat, error) {
+func (r *ChatRepository) UpsertChat(
+	ctx context.Context,
+	telegramID int64,
+	title string,
+) (*Chat, error) {
 	var chat Chat
 
 	var pgTitle pgtype.Text
@@ -52,7 +55,9 @@ func (r *ChatRepository) UpsertChat(ctx context.Context, telegramID int64, title
 func (r *ChatRepository) GetByTelegramID(ctx context.Context, telegramID int64) (*Chat, error) {
 	var chat Chat
 	query := `
-	SELECT * FROM chats WHERE telegram_id = $1
+		SELECT id, telegram_id, title, created_at
+		FROM chats 
+		WHERE telegram_id = $1
 	`
 
 	err := r.db.QueryRow(ctx, query, telegramID).Scan(

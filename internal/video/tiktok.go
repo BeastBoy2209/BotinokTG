@@ -26,7 +26,7 @@ type tikWmResponse struct {
 func (d *TikTokDownloader) Download(ctx context.Context, videoUrl string) (*DownloadVideo, error) {
 	apiURL := "https://www.tikwm.com/api/?url=" + url.QueryEscape(videoUrl)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,12 @@ func (d *TikTokDownloader) Download(ctx context.Context, videoUrl string) (*Down
 		return nil, errors.New("failed to get video link from tikwm API")
 	}
 
-	vidReq, err := http.NewRequestWithContext(ctx, http.MethodGet, apiResp.Data.Play, nil)
+	vidReq, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodGet,
+		apiResp.Data.Play,
+		http.NoBody,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -61,12 +66,13 @@ func (d *TikTokDownloader) Download(ctx context.Context, videoUrl string) (*Down
 		return nil, err
 	}
 	filePath := tmpFile.Name()
-	
+
 	size, err := io.Copy(tmpFile, vidResp.Body)
 	tmpFile.Close()
 
 	if err != nil || size == 0 {
 		os.Remove(filePath)
+
 		return nil, errors.New("failed to download video file")
 	}
 

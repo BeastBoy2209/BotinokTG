@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 
+	"BotinokTG/internal/handlers/mainmenu"
 	"BotinokTG/internal/users"
 
 	"github.com/go-telegram/bot"
@@ -46,24 +47,6 @@ func (h *Handler) Start(ctx context.Context, b *bot.Bot, update *models.Update) 
 		slog.Info("user successfully registered in chat")
 	}
 
-	keyboard := &models.InlineKeyboardMarkup{
-		InlineKeyboard: [][]models.InlineKeyboardButton{
-			{
-				{Text: "Sign Up", CallbackData: "signup"},
-				{Text: "Log In", CallbackData: "login"},
-			},
-			{
-				{Text: "Forgot smth...", CallbackData: "forgot"},
-			},
-		},
-	}
-
-	_, err = b.SendMessage(ctx, &bot.SendMessageParams{
-		ChatID:      update.Message.Chat.ID,
-		Text:        "Welcome to Botinok",
-		ReplyMarkup: keyboard,
-	})
-	if err != nil {
-		slog.Error("smth wrong with message delivery", slog.Any("error", err))
-	}
+	// Call InfoHandler to show the welcome message
+	mainmenu.InfoHandler(ctx, b, update)
 }
